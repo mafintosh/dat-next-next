@@ -1,0 +1,32 @@
+{
+  "name": "dat-share",
+  "version": "0.0.0",
+  "description": "Experimental quick-n-dirty file sharing tool on top of dat",
+  "main": "index.js",
+  "dependencies": {
+    "ansi-diff-stream": "^1.1.1",
+    "hypercore": "github:mafintosh/hypercore#sleep",
+    "hyperdiscovery": "^1.1.0",
+    "minimist": "^1.2.0",
+    "prettier-bytes": "^1.0.3",
+    "progress-string": "^1.2.1",
+    "pump": "^1.0.2",
+    "random-access-file": "^1.4.0",
+    "random-access-memory": "^2.3.0",
+    "speedometer": "^1.0.0"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mafintosh/dat-share.git"
+  },
+  "author": "Mathias Buus (@mafintosh)",
+  "bin": {
+    "dat-share": "./index.js"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mafintosh/dat-share/issues"
+  },
+  "homepage": "https://github.com/mafintosh/dat-share"
+}
