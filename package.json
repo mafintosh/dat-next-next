@@ -1,6 +1,6 @@
 {
   "name": "dat-share",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Experimental quick-n-dirty file sharing tool on top of dat",
   "main": "index.js",
   "dependencies": {
