@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+process.title = 'dat-share'
+
 var progress = require('progress-string')
 var speedometer = require('speedometer')
 var hypercore = require('hypercore')
@@ -76,7 +78,7 @@ feed.on('download', function (index, data) {
 
 function log () {
   if (!feed.blocks) return diff.write('Connecting to swarm ...')
-  if (!bar) bar = progress({width: 50, total: feed.blocks, style: a => a + '>' })
+  if (!bar) bar = progress({width: 50, total: feed.blocks, style: (a, b) => a + '>' + b })
 
   if (src) {
     diff.write('Uploading ' + pretty(uploadSpeed()) + '/s')
