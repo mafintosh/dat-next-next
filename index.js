@@ -17,7 +17,7 @@ var net = require('net')
 var minimist = require('minimist')
 var path = require('path')
 
-var argv = minimist(process.argv.slice(2), {alias: {sleep: 's'}})
+var argv = minimist(process.argv.slice(2), {alias: {sleep: 's', quiet: 'q'}})
 var uploadSpeed = speedometer()
 var downloadSpeed = speedometer()
 var diff = ansi()
@@ -77,6 +77,7 @@ feed.on('download', function (index, data) {
 })
 
 function log () {
+  if (argv.quiet) return
   if (!feed.blocks) return diff.write('Connecting to swarm ...')
   if (!bar) bar = progress({width: 50, total: feed.blocks, style: (a, b) => a + '>' + b })
 
