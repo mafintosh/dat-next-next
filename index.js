@@ -91,8 +91,7 @@ function log () {
   } else {
     diff.write(
       '\n[' + bar(downloaded) + ']\n\n' +
-      'Downloading ' + pretty(downloadSpeed()) + '/s\n' +
-      'Uploading ' + pretty(uploadSpeed()) + '/s'
+      'Downloading ' + pretty(downloadSpeed()) + '/s, Uploading ' + pretty(uploadSpeed()) + '/s'
     )
   }
 }
