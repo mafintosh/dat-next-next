@@ -20,6 +20,7 @@ var path = require('path')
 var argv = minimist(process.argv.slice(2), {alias: {sleep: 's', quiet: 'q'}})
 var uploadSpeed = speedometer()
 var downloadSpeed = speedometer()
+var indexSpeed = speedometer()
 var diff = ansi()
 
 diff.pipe(process.stdout)
@@ -29,6 +30,10 @@ var dest = argv._[1]
 var key = null
 var downloaded = 0
 var bar = null
+var indexBar = null
+
+var indexed = 0
+var total = 0
 
 if (dest) {
   key = src
@@ -48,7 +53,16 @@ feed.ready(function () {
 
   if (src) {
     console.log('Share this command:\ndat-next-next ' + feed.key.toString('hex') + ' ' + JSON.stringify(src) + '\n')
-    if (!feed.blocks) fs.createReadStream(src).pipe(feed.createWriteStream())
+    if (!feed.blocks) {
+      total = fs.statSync(src).size
+      indexBar = progress({width: 50, total: total, style: (a, b) => a + '>' + b })
+      var rs = fs.createReadStream(src)
+      rs.pipe(feed.createWriteStream())
+      rs.on('data', function (data) {
+        indexSpeed(data.length)
+        indexed += data.length
+      })
+    }
   } else {
     feed.get(0, function () {
       if (feed.blocks === downloaded) { // WORKAROUND
@@ -78,11 +92,14 @@ feed.on('download', function (index, data) {
 
 function log () {
   if (argv.quiet) return
-  if (!feed.blocks) return diff.write('Connecting to swarm ...')
+  if (!feed.blocks && !indexBar) return diff.write('Connecting to swarm ...')
   if (!bar) bar = progress({width: 50, total: feed.blocks, style: (a, b) => a + '>' + b })
 
   if (src) {
-    diff.write('Uploading ' + pretty(uploadSpeed()) + '/s')
+    diff.write(
+      '[' + indexBar(indexed) + ']\n\n' +
+      (indexed < total ? ('Indexing ' + pretty(indexSpeed()) + '/s') : ('Uploading ' + pretty(uploadSpeed()) + '/s'))
+    )
   } else if (feed.blocks === downloaded) {
     diff.write(
       '\n[' + bar(downloaded) + ']\n\n' +
