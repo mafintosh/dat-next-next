@@ -1,9 +1,9 @@
-# dat-share
+# dat-next-next
 
 Experimental quick-n-dirty file sharing tool on top of dat
 
 ```
-npm install dat-share
+npm install dat-next-next
 ```
 
 ## Usage
@@ -11,13 +11,13 @@ npm install dat-share
 One one computer
 
 ```
-dat-share ./some-file
+dat-next-next ./some-file
 ```
 
 On another
 
 ```
-dat-share <key-from-above> ./some-file
+dat-next-next <key-from-above> ./some-file
 ```
 
 ## License

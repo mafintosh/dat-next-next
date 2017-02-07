@@ -47,7 +47,7 @@ feed.ready(function () {
   }
 
   if (src) {
-    console.log('Share this command:\ndat-share ' + feed.key.toString('hex') + ' ' + JSON.stringify(src) + '\n')
+    console.log('Share this command:\ndat-next-next ' + feed.key.toString('hex') + ' ' + JSON.stringify(src) + '\n')
     if (!feed.blocks) fs.createReadStream(src).pipe(feed.createWriteStream())
   } else {
     feed.get(0, function () {
@@ -64,7 +64,7 @@ feed.ready(function () {
 
   log()
   setInterval(log, 1000)
-  hyperdiscovery(feed)
+  hyperdiscovery(feed, {utp: false})
 })
 
 feed.on('upload', function (index, data) {

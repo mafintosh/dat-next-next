@@ -1,5 +1,5 @@
 {
-  "name": "dat-share",
+  "name": "dat-next-next",
   "version": "0.0.3",
   "description": "Experimental quick-n-dirty file sharing tool on top of dat",
   "main": "index.js",
@@ -18,15 +18,15 @@
   "devDependencies": {},
   "repository": {
     "type": "git",
-    "url": "https://github.com/mafintosh/dat-share.git"
+    "url": "https://github.com/mafintosh/dat-next-next.git"
   },
   "author": "Mathias Buus (@mafintosh)",
   "bin": {
-    "dat-share": "./index.js"
+    "dat-next-next": "./index.js"
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mafintosh/dat-share/issues"
+    "url": "https://github.com/mafintosh/dat-next-next/issues"
   },
-  "homepage": "https://github.com/mafintosh/dat-share"
+  "homepage": "https://github.com/mafintosh/dat-next-next"
 }
