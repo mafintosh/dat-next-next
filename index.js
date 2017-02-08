@@ -78,7 +78,7 @@ feed.ready(function () {
 
   log()
   setInterval(log, 1000)
-  hyperdiscovery(feed, {utp: false})
+  hyperdiscovery(feed, {utp: argv.utp !== false})
 })
 
 feed.on('upload', function (index, data) {
