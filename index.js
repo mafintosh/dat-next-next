@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-process.title = 'dat-share'
+process.title = 'dat-next-next'
 
 var progress = require('progress-string')
 var speedometer = require('speedometer')
@@ -96,10 +96,16 @@ function log () {
   if (!bar) bar = progress({width: 50, total: feed.blocks, style: (a, b) => a + '>' + b })
 
   if (src) {
-    diff.write(
-      '[' + indexBar(indexed) + ']\n\n' +
-      (indexed < total ? ('Indexing ' + pretty(indexSpeed()) + '/s') : ('Uploading ' + pretty(uploadSpeed()) + '/s'))
-    )
+    if (!indexBar) {
+      diff.write(
+        'Uploading ' + pretty(uploadSpeed()) + '/s'
+      )
+    } else {
+      diff.write(
+        '[' + indexBar(indexed) + ']\n\n' +
+        (indexed < total ? ('Indexing ' + pretty(indexSpeed()) + '/s') : ('Uploading ' + pretty(uploadSpeed()) + '/s'))
+      )
+    }
   } else if (feed.blocks === downloaded) {
     diff.write(
       '\n[' + bar(downloaded) + ']\n\n' +
