@@ -40,11 +40,7 @@ if (dest) {
   src = null
 }
 
-var feed = hypercore(key, {indexing: !key}, function (name) {
-  if (name === 'data') return raf(src || dest)
-  if (argv.sleep) return raf(path.join(argv.sleep, 'sleep', name))
-  return ram()
-})
+var feed = hypercore(storage, key, {indexing: !key})
 
 feed.ready(function () {
   for (var i = 0; i < feed.blocks; i++) {
@@ -65,7 +61,7 @@ feed.ready(function () {
     }
   } else {
     feed.get(0, function () {
-      if (feed.blocks === downloaded) { // WORKAROUND
+      if (feed.length === downloaded) { // WORKAROUND
         log()
         process.exit(0)
       }
@@ -92,8 +88,8 @@ feed.on('download', function (index, data) {
 
 function log () {
   if (argv.quiet) return
-  if (!feed.blocks && !indexBar) return diff.write('Connecting to swarm ...')
-  if (!bar) bar = progress({width: 50, total: feed.blocks, style: (a, b) => a + '>' + b })
+  if (!feed.length && !indexBar) return diff.write('Connecting to swarm ...')
+  if (!bar) bar = progress({width: 50, total: feed.length, style: (a, b) => a + '>' + b })
 
   if (src) {
     if (!indexBar) {
@@ -106,7 +102,7 @@ function log () {
         (indexed < total ? ('Indexing ' + pretty(indexSpeed()) + '/s') : ('Uploading ' + pretty(uploadSpeed()) + '/s'))
       )
     }
-  } else if (feed.blocks === downloaded) {
+  } else if (feed.length === downloaded) {
     diff.write(
       '\n[' + bar(downloaded) + ']\n\n' +
       'Download completed.'
@@ -117,4 +113,10 @@ function log () {
       'Downloading ' + pretty(downloadSpeed()) + '/s, Uploading ' + pretty(uploadSpeed()) + '/s'
     )
   }
+}
+
+function storage (name) {
+  if (name === 'data') return raf(src || dest)
+  if (argv.sleep) return raf(path.join(argv.sleep, 'sleep', name))
+  return ram()
 }
