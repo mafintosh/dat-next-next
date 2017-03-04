@@ -40,7 +40,7 @@ if (dest) {
   src = null
 }
 
-var feed = hypercore(storage, key, {indexing: !key})
+var feed = hypercore(storage, key, {indexing: !key, sparse: true}) // sparse: true cause we manually manage .download
 
 feed.ready(function () {
   for (var i = 0; i < feed.blocks; i++) {

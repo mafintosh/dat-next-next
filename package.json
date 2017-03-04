@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "ansi-diff-stream": "^1.1.1",
-    "hypercore": "5.0.0-rc.0",
+    "hypercore": "^5.0.0",
     "hyperdiscovery": "^1.1.0",
     "minimist": "^1.2.0",
     "prettier-bytes": "^1.0.3",
