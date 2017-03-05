@@ -43,13 +43,13 @@ if (dest) {
 var feed = hypercore(storage, key, {indexing: !key, sparse: true}) // sparse: true cause we manually manage .download
 
 feed.ready(function () {
-  for (var i = 0; i < feed.blocks; i++) {
+  for (var i = 0; i < feed.length; i++) {
     if (feed.has(i)) downloaded++
   }
 
   if (src) {
     console.log('Share this command:\ndat-next-next ' + feed.key.toString('hex') + ' ' + JSON.stringify(src) + '\n')
-    if (!feed.blocks) {
+    if (!feed.length) {
       total = fs.statSync(src).size
       indexBar = progress({width: 50, total: total, style: (a, b) => a + '>' + b })
       var rs = fs.createReadStream(src)
