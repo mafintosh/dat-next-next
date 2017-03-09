@@ -40,7 +40,12 @@ if (dest) {
   src = null
 }
 
-var feed = hypercore(storage, key, {indexing: !key, sparse: true}) // sparse: true cause we manually manage .download
+var feed = hypercore(storage, key, {indexing: !key, sparse: true, maxRequests: Number(argv['max-requests'] || 16)}) // sparse: true cause we manually manage .download
+
+if (argv.stats) {
+  localcast()
+  console.log('Open https://hyperdrive.technology to view the stats')
+}
 
 feed.ready(function () {
   for (var i = 0; i < feed.length; i++) {
@@ -65,7 +70,7 @@ feed.ready(function () {
         log()
         process.exit(0)
       }
-      feed.download(function () {
+      feed.download({linear: argv.linear}, function () {
         log()
         process.exit(0)
       })
@@ -85,6 +90,31 @@ feed.on('download', function (index, data) {
   downloaded++
   downloadSpeed(data.length)
 })
+
+function localcast () {
+  var cast = require('localcast')('hypercore')
+
+  feed.ready(list)
+  cast.on('localcast', list)
+
+  feed.on('download', function (index) {
+    cast.emit('download', {index: index, length: feed.length})
+  })
+
+  feed.on('upload', function (index) {
+    cast.emit('upload', {index: index, length: feed.length})
+  })
+
+  function list () {
+    var list = []
+
+    for (var i = 0; i < feed.length; i++) {
+      list.push(feed.has(i) ? 1 : 0)
+    }
+
+    cast.emit('list', list)
+  }
+}
 
 function log () {
   if (argv.quiet) return

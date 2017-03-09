@@ -7,6 +7,7 @@
     "ansi-diff-stream": "^1.1.1",
     "hypercore": "^5.0.0",
     "hyperdiscovery": "^1.1.0",
+    "localcast": "^2.0.0",
     "minimist": "^1.2.0",
     "prettier-bytes": "^1.0.3",
     "progress-string": "^1.2.1",
