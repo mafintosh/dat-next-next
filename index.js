@@ -70,7 +70,7 @@ feed.ready(function () {
         log()
         process.exit(0)
       }
-      feed.download({linear: argv.linear}, function () {
+      feed.download({linear: argv.linear, start: 0, end: feed.length}, function () {
         log()
         process.exit(0)
       })
