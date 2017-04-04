@@ -7,7 +7,10 @@ var hyperdrive = require('hyperdrive')
 var mirror = require('mirror-folder')
 var minimist = require('minimist')
 
-var argv = minimist(process.argv.slice(2))
+var argv = minimist(process.argv.slice(2), {
+  default: {utp: true},
+  boolean: ['utp']
+})
 
 var key = argv._[0]
 
@@ -15,7 +18,7 @@ if (key) download(new Buffer(key, 'hex'))
 else upload()
 
 function download (key) {
-  var archive = hyperdrive('.dat', key)
+  var archive = hyperdrive('.dat', key, {sparse: true})
 
   archive.on('ready', function () {
     console.log('Syncing to', process.cwd())
