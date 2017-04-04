@@ -6,6 +6,7 @@ var discovery = require('hyperdiscovery')
 var hyperdrive = require('hyperdrive')
 var mirror = require('mirror-folder')
 var minimist = require('minimist')
+var path = require('path')
 
 var argv = minimist(process.argv.slice(2), {
   default: {utp: true},
@@ -18,7 +19,10 @@ if (key) download(new Buffer(key, 'hex'))
 else upload()
 
 function download (key) {
+  var filter = argv._[1] || '/'
   var archive = hyperdrive('.dat', key, {sparse: true})
+
+  if (filter[0] !== '/') filter = '/' + filter
 
   archive.on('ready', function () {
     console.log('Syncing to', process.cwd())
@@ -35,7 +39,7 @@ function download (key) {
 
     function copy () {
       var length = archive.metadata.length
-      var progress = mirror({name: '/', fs: archive}, process.cwd())
+      var progress = mirror({name: filter, fs: archive}, path.join(process.cwd(), filter))
       var changed = false
 
       progress.on('put', function (src) {
