@@ -2,151 +2,87 @@
 
 process.title = 'dat-next-next'
 
-var progress = require('progress-string')
-var speedometer = require('speedometer')
-var hypercore = require('hypercore')
-var hyperdiscovery = require('hyperdiscovery')
-var ansi = require('ansi-diff-stream')
-var pretty = require('prettier-bytes')
-var speed = require('speedometer')
-var ram = require('random-access-memory')
-var raf = require('random-access-file')
-var pump = require('pump')
-var fs = require('fs')
-var net = require('net')
+var discovery = require('hyperdiscovery')
+var hyperdrive = require('hyperdrive')
+var mirror = require('mirror-folder')
 var minimist = require('minimist')
-var path = require('path')
 
-var argv = minimist(process.argv.slice(2), {alias: {sleep: 's', quiet: 'q'}})
-var uploadSpeed = speedometer()
-var downloadSpeed = speedometer()
-var indexSpeed = speedometer()
-var diff = ansi()
+var argv = minimist(process.argv.slice(2))
 
-diff.pipe(process.stdout)
+var key = argv._[0]
 
-var src = argv._[0]
-var dest = argv._[1]
-var key = null
-var downloaded = 0
-var bar = null
-var indexBar = null
+if (key) download(new Buffer(key, 'hex'))
+else upload()
 
-var indexed = 0
-var total = 0
+function download (key) {
+  var archive = hyperdrive('.dat', key)
 
-if (dest) {
-  key = src
-  src = null
-}
+  archive.on('ready', function () {
+    console.log('Syncing to', process.cwd())
+    console.log('Key is: ' + archive.key.toString('hex'))
 
-var feed = hypercore(storage, key, {indexing: !key, sparse: true, maxRequests: Number(argv['max-requests'] || 16)}) // sparse: true cause we manually manage .download
-
-if (argv.stats) {
-  localcast()
-  console.log('Open https://hyperdrive.technology to view the stats')
-}
-
-feed.ready(function () {
-  for (var i = 0; i < feed.length; i++) {
-    if (feed.has(i)) downloaded++
-  }
-
-  if (src) {
-    console.log('Share this command:\ndat-next-next ' + feed.key.toString('hex') + ' ' + JSON.stringify(src) + '\n')
-    if (!feed.length) {
-      total = fs.statSync(src).size
-      indexBar = progress({width: 50, total: total, style: (a, b) => a + '>' + b })
-      var rs = fs.createReadStream(src)
-      rs.pipe(feed.createWriteStream())
-      rs.on('data', function (data) {
-        indexSpeed(data.length)
-        indexed += data.length
-      })
-    }
-  } else {
-    feed.get(0, function () {
-      if (feed.length === downloaded) { // WORKAROUND
-        log()
-        process.exit(0)
-      }
-      feed.download({linear: argv.linear, start: 0, end: feed.length}, function () {
-        log()
-        process.exit(0)
-      })
-    })
-  }
-
-  log()
-  setInterval(log, 1000)
-  hyperdiscovery(feed, {utp: argv.utp !== false})
-})
-
-feed.on('upload', function (index, data) {
-  uploadSpeed(data.length)
-})
-
-feed.on('download', function (index, data) {
-  downloaded++
-  downloadSpeed(data.length)
-})
-
-function localcast () {
-  var cast = require('localcast')('hypercore')
-
-  feed.ready(list)
-  cast.on('localcast', list)
-
-  feed.on('download', function (index) {
-    cast.emit('download', {index: index, length: feed.length})
-  })
-
-  feed.on('upload', function (index) {
-    cast.emit('upload', {index: index, length: feed.length})
-  })
-
-  function list () {
-    var list = []
-
-    for (var i = 0; i < feed.length; i++) {
-      list.push(feed.has(i) ? 1 : 0)
-    }
-
-    cast.emit('list', list)
-  }
-}
-
-function log () {
-  if (argv.quiet) return
-  if (!feed.length && !indexBar) return diff.write('Connecting to swarm ...')
-  if (!bar) bar = progress({width: 50, total: feed.length, style: (a, b) => a + '>' + b })
-
-  if (src) {
-    if (!indexBar) {
-      diff.write(
-        'Uploading ' + pretty(uploadSpeed()) + '/s'
-      )
+    if (archive.metadata.length) {
+      copy()
     } else {
-      diff.write(
-        '[' + indexBar(indexed) + ']\n\n' +
-        (indexed < total ? ('Indexing ' + pretty(indexSpeed()) + '/s') : ('Uploading ' + pretty(uploadSpeed()) + '/s'))
-      )
+      console.log('Waiting for update ...')
+      archive.metadata.once('append', copy)
     }
-  } else if (feed.length === downloaded) {
-    diff.write(
-      '\n[' + bar(downloaded) + ']\n\n' +
-      'Download completed.'
-    )
-  } else {
-    diff.write(
-      '\n[' + bar(downloaded) + ']\n\n' +
-      'Downloading ' + pretty(downloadSpeed()) + '/s, Uploading ' + pretty(uploadSpeed()) + '/s'
-    )
-  }
+
+    discovery(archive, {live: true, utp: !!argv.utp})
+
+    function copy () {
+      var length = archive.metadata.length
+      var progress = mirror({name: '/', fs: archive}, process.cwd())
+      var changed = false
+
+      progress.on('put', function (src) {
+        changed = true
+        console.log('Downloading file', src.name)
+      })
+
+      progress.on('del', function (src) {
+        changed = true
+        console.log('Removing file', src.name)
+      })
+
+      progress.on('end', function () {
+        if (!changed) {
+          console.log('Waiting for update ...')
+          if (length !== archive.metadata.length) copy()
+          else archive.metadata.once('append', copy)
+          return
+        }
+        console.log('Done! Bye.')
+        process.exit(0)
+      })
+    }
+  })
 }
 
-function storage (name) {
-  if (name === 'data') return raf(src || dest)
-  if (argv.sleep) return raf(path.join(argv.sleep, 'sleep', name))
-  return ram()
+function upload () {
+  var archive = hyperdrive('.dat')
+
+  archive.on('ready', function () {
+    console.log('Sharing', process.cwd())
+    console.log('Key is: ' + archive.key.toString('hex'))
+
+    discovery(archive, {live: true, utp: !!argv.utp})
+
+    var progress = mirror(process.cwd(), {name: '/', fs: archive}, {ignore: ignore, live: true, dereference: true})
+
+    progress.on('put', function (src) {
+      console.log('Adding file', src.name)
+    })
+
+    progress.on('del', function (src) {
+      console.log('Removing file', src.name)
+    })
+  })
+}
+
+function ignore (name, st) {
+  if (st && st.isDirectory()) return true // ignore dirs
+  if (name.indexOf('.DS_Store') > -1) return true
+  if (name.indexOf('.dat') > -1) return true
+  return false
 }
