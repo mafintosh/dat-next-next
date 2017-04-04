@@ -38,6 +38,8 @@ function download (key) {
     discovery(archive, {live: true, utp: !!argv.utp})
 
     function copy () {
+      console.log('Dat contains ' + archive.metadata.length + ' changes')
+
       var length = archive.metadata.length
       var progress = mirror({name: filter, fs: archive}, path.join(process.cwd(), filter))
       var changed = false
@@ -54,7 +56,7 @@ function download (key) {
 
       progress.on('end', function () {
         if (!changed) {
-          console.log('Waiting for update ...')
+          console.log('In sync, waiting for update ...')
           if (length !== archive.metadata.length) copy()
           else archive.metadata.once('append', copy)
           return
