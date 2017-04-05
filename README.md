@@ -11,13 +11,16 @@ npm install dat-next-next
 One one computer
 
 ```
-dat-next-next ./some-file
+cd cool-directory
+dat-next-next
 ```
 
 On another
 
 ```
-dat-next-next <key-from-above> ./some-file
+mkdir cool-directory-clone
+cd cool-directory-clone
+dat-next-next <key-from-above>
 ```
 
 ## License
