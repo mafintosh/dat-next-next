@@ -9,8 +9,8 @@ var minimist = require('minimist')
 var path = require('path')
 
 var argv = minimist(process.argv.slice(2), {
-  default: {utp: true},
-  boolean: ['utp']
+  default: {utp: true, watch: true},
+  boolean: ['utp', 'watch']
 })
 
 var key = argv._[0]
@@ -77,7 +77,7 @@ function upload () {
 
     discovery(archive, {live: true, utp: !!argv.utp})
 
-    var progress = mirror(process.cwd(), {name: '/', fs: archive}, {ignore: ignore, live: true, dereference: true})
+    var progress = mirror(process.cwd(), {name: '/', fs: archive}, {ignore: ignore, live: argv.watch, dereference: true})
 
     progress.on('put', function (src) {
       console.log('Adding file', src.name)
