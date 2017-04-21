@@ -1,6 +1,6 @@
 {
   "name": "dat-next-next",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "Experimental quick-n-dirty file sharing tool on top of dat",
   "main": "index.js",
   "dependencies": {
