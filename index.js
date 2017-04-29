@@ -3,73 +3,73 @@
 process.title = 'dat-next-next'
 
 var discovery = require('hyperdiscovery')
+var storage = require('dat-storage')
 var hyperdrive = require('hyperdrive')
 var mirror = require('mirror-folder')
 var minimist = require('minimist')
+var pretty = require('prettier-bytes')
+var speed = require('speedometer')()
+var diff = require('ansi-diff-stream')()
 var path = require('path')
 
 var argv = minimist(process.argv.slice(2), {
   default: {utp: true, watch: true, seed: false},
-  boolean: ['utp', 'watch']
+  boolean: ['utp', 'watch', 'live']
 })
 
 var key = argv._[0]
+var msg = 'Syncing dat ...'
 
 if (key) download(new Buffer(key, 'hex'))
 else upload()
 
 function download (key) {
-  var filter = argv._[1] || '/'
-  var archive = hyperdrive('.dat', key, {sparse: true})
+  diff.pipe(process.stdout)
 
-  if (filter[0] !== '/') filter = '/' + filter
+  var archive = hyperdrive(storage('.'), key, {latest: true})
+  var modified = false
+
+  archive.on('content', function () {
+    archive.content.on('clear', function () {
+      modified = true
+    })
+
+    archive.content.on('download', function (index, data) {
+      modified = true
+      speed(data.length)
+    })
+  })
+
+  archive.on('sync', function () {
+    msg = 'Dat version is fully synced.'
+    log()
+    if (modified && !argv.live) process.exit()
+    msg += ' Waiting for updates ...'
+    log()
+  })
+
+  archive.on('update', function () {
+    msg = 'Dat was updated, syncing ...'
+  })
 
   archive.on('ready', function () {
-    console.log('Syncing to', process.cwd())
-    console.log('Key is: ' + archive.key.toString('hex'))
-
-    if (archive.metadata.length) {
-      copy()
-    } else {
-      console.log('Waiting for update ...')
-      archive.metadata.once('append', copy)
-    }
-
     discovery(archive, {live: true, utp: !!argv.utp})
-
-    function copy () {
-      console.log('Dat contains ' + archive.metadata.length + ' changes')
-
-      var length = archive.metadata.length
-      var progress = mirror({name: filter, fs: archive}, path.join(process.cwd(), filter))
-      var changed = false
-
-      progress.on('put', function (src) {
-        changed = true
-        console.log('Downloading file', src.name)
-      })
-
-      progress.on('del', function (src) {
-        changed = true
-        console.log('Removing file', src.name)
-      })
-
-      progress.on('end', function () {
-        if (!changed) {
-          console.log('In sync, waiting for update ...')
-          if (length !== archive.metadata.length) copy()
-          else archive.metadata.once('append', copy)
-          return
-        }
-        console.log('Done! Bye.')
-        process.exit(0)
-      })
-    }
+    log()
+    setInterval(log, 500)
   })
+
+  function log () {
+    diff.write(
+      msg + '\n' +
+      'Key is: ' + archive.key.toString('hex') + '\n' +
+      'Downloading at ' + pretty(speed()) + '/s'
+    )
+  }
 }
 
+
 function upload () {
-  var archive = hyperdrive('.dat')
+  var archive = hyperdrive(storage('.'), {indexing: true, latest: true})
 
   archive.on('ready', function () {
     console.log('Sharing', process.cwd())
@@ -79,14 +79,14 @@ function upload () {
 
     if (!!argv.seed) return
 
-    var progress = mirror(process.cwd(), {name: '/', fs: archive}, {ignore: ignore, live: argv.watch, dereference: true})
+    var progress = mirror(process.cwd(), {name: '/', fs: archive}, {ignore: ignore, watch: argv.watch, dereference: true})
 
-    progress.on('put', function (src) {
-      console.log('Adding file', src.name)
+    progress.on('put', function (src, dst) {
+      console.log('Adding file', dst.name)
     })
 
-    progress.on('del', function (src) {
-      console.log('Removing file', src.name)
+    progress.on('del', function (dst) {
+      console.log('Removing file', dst.name)
     })
   })
 }
