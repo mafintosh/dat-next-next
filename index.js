@@ -8,9 +8,12 @@ var hyperdrive = require('hyperdrive')
 var mirror = require('mirror-folder')
 var minimist = require('minimist')
 var pretty = require('prettier-bytes')
-var speed = require('speedometer')()
+var speedometer = require('speedometer')
 var diff = require('ansi-diff-stream')()
 var path = require('path')
+
+var downloadSpeed = speedometer()
+var uploadSpeed = speedometer()
 
 var argv = minimist(process.argv.slice(2), {
   default: {utp: true, watch: true},
@@ -20,11 +23,12 @@ var argv = minimist(process.argv.slice(2), {
 var key = argv._[0]
 var msg = 'Syncing dat ...'
 
+diff.pipe(process.stdout)
+
 if (key) download(new Buffer(key, 'hex'))
 else upload()
 
 function download (key) {
-  diff.pipe(process.stdout)
 
   var archive = hyperdrive(storage('.'), key, {latest: true})
   var modified = false
@@ -36,7 +40,11 @@ function download (key) {
 
     archive.content.on('download', function (index, data) {
       modified = true
-      speed(data.length)
+      downloadSpeed(data.length)
+    })
+
+    archive.content.on('upload', function (index, data) {
+      uploadSpeed(data.length)
     })
   })
 
@@ -62,7 +70,7 @@ function download (key) {
     diff.write(
       msg + '\n' +
       'Key is: ' + archive.key.toString('hex') + '\n' +
-      'Downloading at ' + pretty(speed()) + '/s'
+      'Downloading at ' + pretty(downloadSpeed()) + '/s, Uploading at ' + pretty(uploadSpeed()) + ' (' + archive.metadata.peers.length + ' peers)'
     )
   }
 }
@@ -76,8 +84,15 @@ function upload () {
       archive.close(download)
       return
     }
+
+    archive.content.on('upload', function (index, data) {
+      uploadSpeed(data.length)
+    })
+
     console.log('Sharing', process.cwd())
     console.log('Key is: ' + archive.key.toString('hex'))
+
+    var carusel = []
 
     discovery(archive, {live: true, utp: !!argv.utp}).on('connection', function (c, info) {
       if (argv.debug) {
@@ -91,17 +106,27 @@ function upload () {
       }
     })
 
-    if (!!argv.seed) return
-
     var progress = mirror(process.cwd(), {name: '/', fs: archive}, {ignore: ignore, watch: argv.watch, dereference: true})
 
     progress.on('put', function (src, dst) {
-      console.log('Adding file', dst.name)
+      if (carusel.length === 8) carusel.pop()
+      carusel.unshift('Adding: ' + dst.name)
     })
 
     progress.on('del', function (dst) {
-      console.log('Removing file', dst.name)
+      if (carusel.length === 8) carusel.pop()
+      carusel.unshift('Removing: ' + dst.name)
     })
+
+    log()
+    setInterval(log, 500)
+
+    function log () {
+      diff.write(
+        (carusel.length ? '\n' : '') + carusel.join('\n') + (carusel.length ? '\n\n' : '') +
+        'Uploading at ' + pretty(uploadSpeed()) + ' (' + archive.metadata.peers.length + ' peers)'
+      )
+    }
   })
 }
 
