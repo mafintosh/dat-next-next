@@ -13,7 +13,7 @@ var diff = require('ansi-diff-stream')()
 var path = require('path')
 
 var argv = minimist(process.argv.slice(2), {
-  default: {utp: true, watch: true, seed: false},
+  default: {utp: true, watch: true},
   boolean: ['utp', 'watch', 'live']
 })
 
@@ -72,10 +72,24 @@ function upload () {
   var archive = hyperdrive(storage('.'), {indexing: true, latest: true})
 
   archive.on('ready', function () {
+    if (!archive.writable) {
+      archive.close(download)
+      return
+    }
     console.log('Sharing', process.cwd())
     console.log('Key is: ' + archive.key.toString('hex'))
 
-    discovery(archive, {live: true, utp: !!argv.utp})
+    discovery(archive, {live: true, utp: !!argv.utp}).on('connection', function (c, info) {
+      if (argv.debug) {
+        console.log('New connection:', info)
+        c.on('error', function (err) {
+          console.log('Connection error:', err)
+        })
+        c.on('close', function () {
+          console.log('Connection closed')
+        })
+      }
+    })
 
     if (!!argv.seed) return
 
