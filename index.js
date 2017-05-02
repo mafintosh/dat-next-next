@@ -61,12 +61,13 @@ function download (key) {
   })
 
   archive.on('ready', function () {
-    discovery(archive, {live: true, utp: !!argv.utp})
+    discovery(archive, {live: true, utp: !!argv.utp}).on('connection', onconnection)
     log()
     setInterval(log, 500)
   })
 
   function log () {
+    if (argv.debug) return
     diff.write(
       msg + '\n' +
       'Key is: ' + archive.key.toString('hex') + '\n' +
@@ -94,17 +95,7 @@ function upload () {
 
     var carusel = []
 
-    discovery(archive, {live: true, utp: !!argv.utp}).on('connection', function (c, info) {
-      if (argv.debug) {
-        console.log('New connection:', info)
-        c.on('error', function (err) {
-          console.log('Connection error:', err)
-        })
-        c.on('close', function () {
-          console.log('Connection closed')
-        })
-      }
-    })
+    discovery(archive, {live: true, utp: !!argv.utp}).on('connection', onconnection)
 
     var progress = mirror(process.cwd(), {name: '/', fs: archive}, {ignore: ignore, watch: argv.watch, dereference: true})
 
@@ -122,6 +113,8 @@ function upload () {
     setInterval(log, 500)
 
     function log () {
+      if (argv.debug) return
+
       diff.write(
         (carusel.length ? '\n' : '') + carusel.join('\n') + (carusel.length ? '\n\n' : '') +
         'Uploading at ' + pretty(uploadSpeed()) + ' (' + archive.metadata.peers.length + ' peers)'
@@ -135,4 +128,16 @@ function ignore (name, st) {
   if (name.indexOf('.DS_Store') > -1) return true
   if (name.indexOf('.dat') > -1) return true
   return false
+}
+
+function onconnection (c, info) {
+  if (argv.debug) {
+    console.log('New connection:', info)
+    c.on('error', function (err) {
+      console.log('Connection error:', err)
+    })
+    c.on('close', function () {
+      console.log('Connection closed')
+    })
+  }
 }
